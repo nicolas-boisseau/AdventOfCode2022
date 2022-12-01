@@ -20,14 +20,14 @@ func Test_Process_Sample_Complex(t *testing.T) {
 	assert.Equal(t, 45000, result)
 }
 
-func Test_Process_Input1(t *testing.T) {
-	result := Process("input1.txt", false)
+func Test_Process_Input(t *testing.T) {
+	result := Process("input.txt", false)
 
 	fmt.Println(result)
 }
 
-func Test_Process_Input1_Complex(t *testing.T) {
-	result := Process("input1.txt", true)
+func Test_Process_Input_Complex(t *testing.T) {
+	result := Process("input.txt", true)
 
 	fmt.Println(result)
 }
