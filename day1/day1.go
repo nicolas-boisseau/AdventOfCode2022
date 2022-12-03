@@ -26,9 +26,9 @@ func Process(fileName string, complex bool) int {
 		return From(elfs).SelectT(func(kv KeyValue) int { return kv.Value.(int) }).Max().(int)
 	} else {
 		sumOfThreeMostCalories := From(elfs).
-			OrderByDescendingT(func(kv KeyValue) int { return kv.Value.(int) }).
-			Take(3).
 			SelectT(func(kv KeyValue) int { return kv.Value.(int) }).
+			OrderByDescendingT(func(cal int) int { return cal }).
+			Take(3).
 			SumInts()
 
 		return int(sumOfThreeMostCalories)
