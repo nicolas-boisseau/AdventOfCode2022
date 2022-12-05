@@ -12,6 +12,7 @@ import (
 func Process(fileName string, complex bool) string {
 	lines := common.ReadLinesFromFile(fileName)
 
+	// FINDING THE BOTTOM OF THE STACKS
 	rexp, _ := regexp.Compile(`[0-9]+`)
 	indexOfStackStart := 0
 	for index, line := range lines {
@@ -21,6 +22,7 @@ func Process(fileName string, complex bool) string {
 		}
 	}
 
+	// READING STACKS CONTENT
 	rexpLetter, _ := regexp.Compile("[A-Z]+")
 	stacks := make(map[string]*stack.Stack)
 	for i := 1; i < len(lines[indexOfStackStart]) && rexp.MatchString(string(lines[indexOfStackStart][i])); i += 4 {
@@ -33,6 +35,7 @@ func Process(fileName string, complex bool) string {
 		}
 	}
 
+	// PRINT STACKS FOR DEBUG
 	//for k, s := range stacks {
 	//	fmt.Println("Stack", k, ":")
 	//	for s.Len() > 0 {
@@ -40,17 +43,20 @@ func Process(fileName string, complex bool) string {
 	//	}
 	//}
 
+	// READING INSTRUCTIONS (2 lines after stacks content)
 	for _, line := range lines[indexOfStackStart+2:] {
 		var count int
 		var s1, s2 string
 		reader := strings.NewReader(line)
 		fmt.Fscanf(reader, "move %d from %s to %s", &count, &s1, &s2)
 
+		// APPLY INSTRUCTION
 		if !complex {
 			for i := 0; i < count; i++ {
 				stacks[s2].Push(stacks[s1].Pop())
 			}
 		} else {
+			// LEVEL 2
 			tmpStack := stack.New()
 			for i := 0; i < count; i++ {
 				tmpStack.Push(stacks[s1].Pop())
@@ -61,6 +67,7 @@ func Process(fileName string, complex bool) string {
 		}
 	}
 
+	// PRINT RESULT (top of each stacks)
 	result := ""
 	for i := 1; i < len(stacks)+1; i++ {
 		ind := strconv.FormatInt(int64(i), 10)
