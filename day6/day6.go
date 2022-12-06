@@ -6,11 +6,11 @@ import (
 	"github.com/nicolas-boisseau/AdventOfCode2022/common"
 )
 
-func isAllDifferent2(currentWindow string, windowSize int) bool {
+func isAllDifferent2(currentWindow string) bool {
 
 	return linq.From(currentWindow).
 		GroupByT(func(r rune) rune { return r }, func(r rune) rune { return r }).
-		Count() == windowSize
+		Count() == len(currentWindow)
 }
 
 func Process(fileName string, complex bool) int {
@@ -25,7 +25,7 @@ func Process(fileName string, complex bool) int {
 	for i := windowSize; i < len(lines[0]); i++ {
 		currentWindow := lines[0][i-windowSize : i]
 
-		if isAllDifferent2(currentWindow, windowSize) {
+		if isAllDifferent2(currentWindow) {
 			fmt.Println("SIGNAL DETECTED! ", i)
 			signal = i
 			break
