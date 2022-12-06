@@ -2,24 +2,15 @@ package day6
 
 import (
 	"fmt"
+	"github.com/ahmetalpbalkan/go-linq"
 	"github.com/nicolas-boisseau/AdventOfCode2022/common"
 )
 
-func isAllDifferent2(currentWindow string) bool {
+func isAllDifferent2(currentWindow string, windowSize int) bool {
 
-	for i, r1 := range currentWindow {
-		for j, r2 := range currentWindow {
-			if i == j {
-				continue
-			}
-
-			if r1 == r2 {
-				return false
-			}
-		}
-	}
-
-	return true
+	return linq.From(currentWindow).
+		GroupByT(func(r rune) rune { return r }, func(r rune) rune { return r }).
+		Count() == windowSize
 }
 
 func Process(fileName string, complex bool) int {
@@ -34,7 +25,7 @@ func Process(fileName string, complex bool) int {
 	for i := windowSize; i < len(lines[0]); i++ {
 		currentWindow := lines[0][i-windowSize : i]
 
-		if isAllDifferent2(currentWindow) {
+		if isAllDifferent2(currentWindow, windowSize) {
 			fmt.Println("SIGNAL DETECTED! ", i)
 			signal = i
 			break
