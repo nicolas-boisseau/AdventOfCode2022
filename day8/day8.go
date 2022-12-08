@@ -41,7 +41,7 @@ func (g *Grid) CheckIfTreeVisibleFromDirectionX(x, y, directionX int) (bool, int
 	referenceTree := g.content[i][j]
 	i += directionX
 	viewingDistance := 0
-	for i >= 0 && i < g.w {
+	for i >= 0 && i < g.h {
 		viewingDistance++
 		if g.content[i][j] >= referenceTree {
 			return false, viewingDistance
@@ -84,11 +84,13 @@ func Process(fileName string, complex bool) int {
 		}
 	}
 
+	//fmt.Println(g)
+
 	visibleTrees := 0
 	betterView := 0
 	for i, _ := range g.content {
 		for j, _ := range g.content[i] {
-			if i == 0 || i == len(g.content)-1 || j == 0 || j == len(g.content[i])-1 {
+			if i == 0 || i == g.h-1 || j == 0 || j == g.w-1 {
 				visibleTrees++
 			} else {
 				isVisibleRight, viewRight := g.CheckIfTreeVisibleFromDirectionX(i, j, 1)
