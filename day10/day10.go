@@ -27,6 +27,20 @@ func Process(fileName string, complex bool) int {
 			currentInstr.Operation()
 			instructions = instructions[1:]
 		}
+
+		// FOR LEVEL 2 (draw CRT lines)
+		pos := cycle % 40
+		spritePosition := registryX
+		if pos == spritePosition-1 || pos == spritePosition || pos == spritePosition+1 {
+			fmt.Print("#")
+		} else {
+			fmt.Print(".")
+		}
+		if pos == 0 {
+			fmt.Println()
+		}
+		// END LEVEL 2
+
 		cycle++
 	}
 
@@ -46,18 +60,18 @@ func Process(fileName string, complex bool) int {
 			})
 		}
 
-		fmt.Printf("cycle n°%d = %d\n", cycle, registryX)
+		//fmt.Printf("cycle n°%d = %d\n", cycle, registryX)
 		history[cycle] = registryX
 
 		// processing
 		processOneCycle()
 	}
 
-	fmt.Println("END OF INSTRUCTIONS")
+	//fmt.Println("END OF INSTRUCTIONS")
 
 	for len(instructions) > 0 {
 
-		fmt.Printf("cycle n°%d = %d\n", cycle, registryX)
+		//fmt.Printf("cycle n°%d = %d\n", cycle, registryX)
 		history[cycle] = registryX
 
 		//removeProcessedOp()
