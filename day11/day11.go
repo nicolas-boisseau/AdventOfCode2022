@@ -12,6 +12,7 @@ type Monkey struct {
 	items             []int
 	operation         func(int) int
 	test              func(int) bool
+	diviser           int
 	nextMonkeyIfTrue  int
 	nextMonkeyIfFalse int
 }
@@ -64,14 +65,13 @@ func Process(fileName string, complex bool) int {
 						return old + op_value_num
 					case "*":
 						return old * op_value_num
-					case "/":
-						return old / op_value_num
-					case "-":
-						return old - op_value_num
 					}
 					return old
 				},
-				test:              func(v int) bool { return v%diviser == 0 },
+				test: func(v int) bool {
+					return v%diviser == 0
+				},
+				diviser:           diviser,
 				nextMonkeyIfTrue:  nextMonkeyIfTrue,
 				nextMonkeyIfFalse: nextMonkeyIfFalse,
 			})
@@ -83,6 +83,12 @@ func Process(fileName string, complex bool) int {
 	if complex {
 		numberOfRounds = 10000
 	}
+
+	// limit to only the divisers that we need to watch
+	modulo := linq.From(monkeys).
+		SelectT(func(monkey *Monkey) int { return monkey.diviser }).
+		AggregateT(func(v, v2 int) int { return v * v2 }).(int)
+
 	for round := 1; round <= numberOfRounds; round++ {
 
 		for currentMonkeyIndex, currentMonkey := range monkeys {
@@ -93,6 +99,8 @@ func Process(fileName string, complex bool) int {
 				currentItem = currentMonkey.operation(currentItem)
 				if !complex {
 					currentItem /= 3
+				} else {
+					currentItem %= modulo
 				}
 				if currentMonkey.test(currentItem) {
 					monkeys[currentMonkey.nextMonkeyIfTrue].items =
@@ -109,11 +117,11 @@ func Process(fileName string, complex bool) int {
 		}
 
 		if round == 1 || round == 20 || round == 1000 || round == 2000 {
-			fmt.Println("Monkeys stats after round", round)
-			for _, currentMonkey := range monkeys {
-				fmt.Println(currentMonkey)
-			}
-			fmt.Println(inspectionsByMonkey)
+			//fmt.Println("Monkeys stats after round", round)
+			//for _, currentMonkey := range monkeys {
+			//	fmt.Println(currentMonkey)
+			//}
+			//fmt.Println(inspectionsByMonkey)
 		}
 	}
 
