@@ -96,14 +96,12 @@ func Process(fileName string, complex bool) int {
 				n = RuneToInt('z')
 			} else {
 				n = RuneToInt(c)
-				weightedNodes = append(weightedNodes, Node{X: x, Y: y, Weighting: n})
 
 				if c == 'a' {
 					possiblesStarts = append(possiblesStarts, Node{X: x, Y: y})
 				}
 			}
 			g.content[y][x] = n
-			weightedNodes = append(weightedNodes, Node{X: x, Y: y, Weighting: n})
 		}
 	}
 
@@ -135,20 +133,11 @@ func Process(fileName string, complex bool) int {
 			return -1
 		}
 
+		// start is always visited but end should not appear as visited
 		g.visited[start.Y][start.X] = true
 		g.visited[end.Y][end.X] = false
-
-		// the foundPath has now the way to the target
-
-		// IMPORTANT:
-		// the path is in the opposite way so the endpoint node is on index 0
-		// you can avoid it by switching the startNode<>endNode parameter
-		for _, node := range foundPath {
-			//fmt.Println(node)
-			g.visited[node.Y][node.X] = true
-		}
-
 		fmt.Println(g)
+		fmt.Println(g.SumVisited())
 
 		return len(foundPath)
 	} else {
