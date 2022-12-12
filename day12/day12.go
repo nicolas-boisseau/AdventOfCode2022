@@ -81,6 +81,7 @@ func Process(fileName string, complex bool) int {
 	var start, end Node
 	obstacleNodes := []Node{}
 	weightedNodes := make([]Node, 0)
+	possiblesStarts := make([]Node, 0)
 	for y, line := range lines {
 		//fmt.Println(line)
 
@@ -89,12 +90,17 @@ func Process(fileName string, complex bool) int {
 			if c == 'S' {
 				start = Node{X: x, Y: y}
 				n = RuneToInt('a')
+				possiblesStarts = append(possiblesStarts, start)
 			} else if c == 'E' {
 				end = Node{X: x, Y: y}
 				n = RuneToInt('z')
 			} else {
 				n = RuneToInt(c)
 				weightedNodes = append(weightedNodes, Node{X: x, Y: y, Weighting: n})
+
+				if c == 'a' {
+					possiblesStarts = append(possiblesStarts, Node{X: x, Y: y})
+				}
 			}
 			g.content[y][x] = n
 			weightedNodes = append(weightedNodes, Node{X: x, Y: y, Weighting: n})
@@ -121,27 +127,40 @@ func Process(fileName string, complex bool) int {
 		return -1
 	}
 
-	// run it
-	foundPath, err := algo.FindPath(start, end)
-	if err != nil || len(foundPath) == 0 {
-		fmt.Println("No path found ...")
-		return -1
+	if !complex {
+		// run it
+		foundPath, err := algo.FindPath(start, end)
+		if err != nil || len(foundPath) == 0 {
+			fmt.Println("No path found ...")
+			return -1
+		}
+
+		g.visited[start.Y][start.X] = true
+		g.visited[end.Y][end.X] = false
+
+		// the foundPath has now the way to the target
+
+		// IMPORTANT:
+		// the path is in the opposite way so the endpoint node is on index 0
+		// you can avoid it by switching the startNode<>endNode parameter
+		for _, node := range foundPath {
+			//fmt.Println(node)
+			g.visited[node.Y][node.X] = true
+		}
+
+		fmt.Println(g)
+
+		return len(foundPath)
+	} else {
+
+		best := 99999
+		for _, s := range possiblesStarts {
+			foundPath, err := algo.FindPath(s, end)
+			if err == nil && len(foundPath) < best {
+				best = len(foundPath)
+			}
+		}
+
+		return best
 	}
-
-	g.visited[start.Y][start.X] = true
-	g.visited[end.Y][end.X] = false
-
-	// the foundPath has now the way to the target
-
-	// IMPORTANT:
-	// the path is in the opposite way so the endpoint node is on index 0
-	// you can avoid it by switching the startNode<>endNode parameter
-	for _, node := range foundPath {
-		//fmt.Println(node)
-		g.visited[node.Y][node.X] = true
-	}
-
-	fmt.Println(g)
-
-	return len(foundPath)
 }

@@ -28,7 +28,7 @@ func Test_Process_Sample_Complex(t *testing.T) {
 	result := Process("sample.txt", true)
 
 	fmt.Println(result)
-	assert.Equal(t, 2713310158, result)
+	assert.Equal(t, 29, result)
 }
 
 func Test_Process_Input_Complex(t *testing.T) {
