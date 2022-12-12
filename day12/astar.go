@@ -248,7 +248,8 @@ func (a *astar) FindPath(startNode, endNode Node) ([]Node, error) {
 				continue
 			}
 
-			a.calculateNode(&neighbor)
+			// disabled for DAY 15
+			//a.calculateNode(&neighbor)
 
 			if !a.openList.Contains(neighbor) {
 				a.openList.Add(neighbor)

@@ -53,6 +53,18 @@ func (g *Grid) Content(p *Point) int {
 	return g.content[p.x][p.y]
 }
 
+func (g *Grid) SumVisited() int {
+	result := 0
+	for y := range g.visited {
+		for x := range g.visited[y] {
+			if g.visited[y][x] {
+				result++
+			}
+		}
+	}
+	return result
+}
+
 func RuneToInt(r rune) int {
 	rexp, _ := regexp.Compile(`[a-z]`)
 	if rexp.MatchString(string(r)) {
@@ -76,21 +88,22 @@ func Process(fileName string, complex bool) int {
 			n := 0
 			if c == 'S' {
 				start = Node{X: x, Y: y}
-				weightedNodes = append(weightedNodes, Node{X: x, Y: y, Weighting: RuneToInt('a')})
+				n = RuneToInt('a')
 			} else if c == 'E' {
 				end = Node{X: x, Y: y}
-				weightedNodes = append(weightedNodes, Node{X: x, Y: y, Weighting: RuneToInt('z')})
+				n = RuneToInt('z')
 			} else {
 				n = RuneToInt(c)
 				weightedNodes = append(weightedNodes, Node{X: x, Y: y, Weighting: n})
 			}
 			g.content[y][x] = n
+			weightedNodes = append(weightedNodes, Node{X: x, Y: y, Weighting: n})
 		}
 	}
 
-	fmt.Println(start)
-	fmt.Println(end)
-	fmt.Println(g)
+	//fmt.Println(start)
+	//fmt.Println(end)
+	//fmt.Println(g)
 
 	// set nodes to the config
 	aConfig := Config{
@@ -115,13 +128,16 @@ func Process(fileName string, complex bool) int {
 		return -1
 	}
 
+	g.visited[start.Y][start.X] = true
+	g.visited[end.Y][end.X] = false
+
 	// the foundPath has now the way to the target
 
 	// IMPORTANT:
 	// the path is in the opposite way so the endpoint node is on index 0
 	// you can avoid it by switching the startNode<>endNode parameter
 	for _, node := range foundPath {
-		fmt.Println(node)
+		//fmt.Println(node)
 		g.visited[node.Y][node.X] = true
 	}
 
