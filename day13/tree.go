@@ -115,6 +115,58 @@ func ReadNode(str string) *Node {
 	return &root
 }
 
+func IndexOf(list []*Node, toSearch *Node) int {
+	for i, n := range list {
+		if n == toSearch {
+			return i
+		}
+	}
+	return -1
+}
+
+func (n *Node) Next() *Node {
+
+	if n.isLeaf {
+		if n.parent != nil {
+			index := IndexOf(n.parent.childs, n)
+			if index+1 < len(n.parent.childs) {
+				return n.parent.childs[index+1]
+			} else {
+				n.parent.Next()
+			}
+		}
+	} else {
+		index := IndexOf(n.parent.childs, n)
+		if index+1 < len(n.parent.childs) {
+			return n.parent.childs[index+1]
+		}
+	}
+
+	return nil
+}
+
+func (n *Node) Compare(n2 *Node) int {
+
+	result := 999
+	next1 := n
+	next2 := n2
+	for next1 != nil && next2 != nil {
+
+		next1 = next1.Next()
+		next2 = next2.Next()
+
+		if next1.value < next2.value {
+			return -1
+		} else if next1.value == next2.value {
+			return 0
+		}
+	}
+
+	// return -1 for <, 0 for == or 1 for >
+	return result
+}
+
+//
 //func (n *Node) FindLeftLeafNode() *Node {
 //	if n.parent == nil {
 //		return nil

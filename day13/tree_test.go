@@ -112,6 +112,28 @@ func Test_Add_Nodes(t *testing.T) {
 	assert.Equal(t, "[[1,2],[[3,4],5]]", n3.String())
 }
 
+func Test_Next(t *testing.T) {
+	n1 := ReadNode("[4,3,2,1,0]")
+
+	curNode := n1.childs[2]
+
+	assert.Equal(t, int64(1), curNode.Next().value)
+	assert.Equal(t, int64(0), curNode.Next().Next().value)
+	assert.Equal(t, nil, curNode.Next().Next().Next())
+}
+
+func Test_Next2(t *testing.T) {
+	n1 := ReadNode("[[1],[2,3,4]]")
+
+	curNode := n1.childs[0]
+
+	fmt.Println(curNode)
+	fmt.Println(curNode.Next())
+	//assert.Equal(t, int64(1), curNode.Next().value)
+	//assert.Equal(t, int64(0), curNode.Next().Next().value)
+	//assert.Equal(t, nil, curNode.Next().Next().Next())
+}
+
 //
 //func Test_Explode_Node(t *testing.T) {
 //	n := ReadNode("[[[[[4,3],4],4],[7,[[8,4],9]]],[1,1]]")
