@@ -10,7 +10,7 @@ func Test_Process_Sample(t *testing.T) {
 	result := Process("sample.txt", false)
 
 	fmt.Println(result)
-	assert.Equal(t, 21, result)
+	assert.Equal(t, 13, result)
 }
 
 func Test_Process_Input(t *testing.T) {
