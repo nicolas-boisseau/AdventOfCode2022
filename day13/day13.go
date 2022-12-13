@@ -1,7 +1,6 @@
 package day13
 
 import (
-	"fmt"
 	"github.com/nicolas-boisseau/AdventOfCode2022/common"
 	"sort"
 )
@@ -18,8 +17,7 @@ func Process(fileName string, complex bool) int {
 			n2 := ReadNode(lines[i+1])
 
 			result := n.CompareReal(n2)
-			fmt.Println(indice, ":", result)
-			//fmt.Println(n, "x", n2, "=", result)
+			//fmt.Println(n, " VS ", n2, "=", result)
 			if result == -1 {
 				//fmt.Println(indice)
 				sum += indice
@@ -35,7 +33,7 @@ func Process(fileName string, complex bool) int {
 	d2 := ReadNode("[[6]]")
 	packets = append(packets, d1, d2)
 
-	fmt.Println(len(packets))
+	//fmt.Println(len(packets))
 
 	sort.Slice(packets, func(i, j int) bool {
 		return packets[i].CompareReal(packets[j]) < 0
@@ -44,10 +42,11 @@ func Process(fileName string, complex bool) int {
 	if !complex {
 		return sum
 	} else {
-		fmt.Println("Packets:")
-		for _, p := range packets {
-			fmt.Println(p)
-		}
+		//fmt.Println("Packets:")
+		//for _, p := range packets {
+		//	//fmt.Print(len(p.String()), ": ")
+		//	fmt.Println(p)
+		//}
 
 		return (IndexOf(packets, d1) + 1) * (IndexOf(packets, d2) + 1)
 	}

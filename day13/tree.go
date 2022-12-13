@@ -13,12 +13,8 @@ import (
 type Node struct {
 	isLeaf bool
 	value  int64
-	//left   *Node
-	//right  *Node
 	childs []*Node
 	parent *Node
-	//visited bool
-	isValid bool
 }
 
 func (n *Node) String() string {
@@ -39,28 +35,6 @@ func (n *Node) String() string {
 	return buff.String()
 }
 
-func Add(n1, n2 *Node) *Node {
-	output := &Node{
-		parent: nil,
-		//left:   n1,
-		//right:  n2,
-		childs: []*Node{n1, n2},
-	}
-	n1.parent = output
-	n2.parent = output
-
-	//reduced := output.Explode(1)
-	//splitted := output.Split()
-	//for reduced || splitted {
-	//	reduced = output.Explode(1)
-	//	splitted = output.Split()
-	//}
-
-	return output
-}
-
-//
-
 func ReadNode(str string) *Node {
 	root := Node{}
 
@@ -80,7 +54,6 @@ func ReadNode(str string) *Node {
 			currentNode = &child
 		} else if string(str[offset]) == "," {
 			currentNode = currentNode.parent
-			currentNode.isValid = true
 			child := Node{
 				parent: currentNode,
 				isLeaf: false,
@@ -94,8 +67,6 @@ func ReadNode(str string) *Node {
 			//}
 			currentNode = currentNode.parent
 		} else {
-			currentNode.isValid = true
-
 			nextComma := strings.Index(str[offset:], ",")
 			rightLimit := nextComma // default
 			nextClosingSquareBrace := strings.Index(str[offset:], "]")
@@ -142,11 +113,6 @@ func (n *Node) NextInListNotVisited(visited map[*Node]bool) (*Node, bool) {
 
 	//fmt.Println(n, "is running out of items !")
 
-	if n.parent != nil {
-		res, _ := n.parent.NextInListNotVisited(visited)
-		return res, true
-	}
-
 	return n.parent, true
 }
 
@@ -164,7 +130,7 @@ func (n *Node) CompareReal(n2 *Node) int {
 
 func (n *Node) Compare2(n2 *Node, visited map[*Node]bool) int {
 
-	fmt.Println("Comparing: ", n, "with", n2)
+	//fmt.Println("Comparing: ", n, "with", n2)
 
 	left, leftOutOfItems := n.Next(visited)
 	right, rightOutOfItems := n2.Next(visited)
@@ -175,7 +141,7 @@ func (n *Node) Compare2(n2 *Node, visited map[*Node]bool) int {
 		return 1
 	}
 
-	fmt.Println("Next() compare: ", left, "with", right)
+	//fmt.Println("Next() compare: ", left, "with", right)
 
 	if left == nil {
 		return -1
@@ -185,16 +151,9 @@ func (n *Node) Compare2(n2 *Node, visited map[*Node]bool) int {
 
 	if !left.isLeaf {
 		if right.isLeaf {
-			rr := &Node{
-				isLeaf: false,
-				childs: []*Node{&Node{isLeaf: true, value: right.value, childs: []*Node{}, parent: right}},
-				parent: right.parent,
-			}
-			visited[rr] = visited[left]
-
-			//right.isLeaf = false
-			//right.childs = []*Node{&Node{isLeaf: true, value: right.value, childs: []*Node{}, parent: right, visited: right.visited}}
-			return left.Compare2(rr, visited)
+			right.isLeaf = false
+			right.childs = []*Node{&Node{isLeaf: true, value: right.value, childs: []*Node{}, parent: right}}
+			return left.Compare2(right, visited)
 		}
 
 		if left == nil {
@@ -206,15 +165,9 @@ func (n *Node) Compare2(n2 *Node, visited map[*Node]bool) int {
 		return left.Compare2(right, visited)
 
 	} else if !right.isLeaf {
-		ll := &Node{
-			isLeaf: false,
-			childs: []*Node{&Node{isLeaf: true, value: left.value, childs: []*Node{}, parent: left}},
-			parent: left.parent,
-		}
-		visited[ll] = visited[left]
-		//left.isLeaf = false
-		//left.childs = []*Node{&Node{isLeaf: true, value: left.value, childs: []*Node{}, parent: left, visited: left.visited}}
-		return ll.Compare2(right, visited)
+		left.isLeaf = false
+		left.childs = []*Node{&Node{isLeaf: true, value: left.value, childs: []*Node{}, parent: left}}
+		return left.Compare2(right, visited)
 	}
 
 	if left.value < right.value {
@@ -226,190 +179,3 @@ func (n *Node) Compare2(n2 *Node, visited map[*Node]bool) int {
 	// return -1 for <, 0 for == or 1 for >
 	return left.Compare2(right, visited)
 }
-
-//
-//func (n *Node) FindLeftLeafNode() *Node {
-//	if n.parent == nil {
-//		return nil
-//	}
-//
-//	currentNode := n.parent
-//	//fmt.Println("Starting with : ", currentNode.String())
-//	// on remonte jusqu'à trouver un noeuds avec une branche gauche
-//	previousNode := n
-//	for currentNode != nil {
-//		if currentNode.left != previousNode {
-//			break
-//		}
-//		previousNode = currentNode
-//		currentNode = currentNode.parent
-//		if currentNode != nil {
-//			//fmt.Println("Moving to parent : ", currentNode.String())
-//		}
-//	}
-//
-//	if currentNode == nil {
-//		//fmt.Println("No left...")
-//		return nil
-//	}
-//
-//	// on prend la direction gauche
-//	currentNode = currentNode.left
-//	//fmt.Println("Take to left child : ", currentNode.String())
-//
-//	// si trouvé, alors on descends jusqu'à la feuille la plus à droite
-//	if currentNode != nil {
-//		for !currentNode.isLeaf {
-//			currentNode = currentNode.right
-//			//fmt.Println("Descending to child right : ", currentNode.String())
-//		}
-//		return currentNode
-//	}
-//
-//	return nil
-//}
-//
-//func (n *Node) FindRightLeafNode() *Node {
-//	if n.parent == nil {
-//		return nil
-//	}
-//
-//	currentNode := n.parent
-//	//fmt.Println("Starting with : ", currentNode.String())
-//	// on remonte jusqu'à trouver un noeuds avec une branche droite
-//	previousNode := n
-//	for currentNode != nil {
-//		if currentNode.right != previousNode {
-//			break
-//		}
-//		previousNode = currentNode
-//		currentNode = currentNode.parent
-//		if currentNode != nil {
-//			//fmt.Println("Moving to parent : ", currentNode.String())
-//		}
-//	}
-//
-//	if currentNode == nil {
-//		///fmt.Println("No right...")
-//		return nil
-//	}
-//
-//	// on prend la direction droite
-//	currentNode = currentNode.right
-//
-//	// si trouvé, alors on descends jusqu'à la feuille la plus à gauche
-//	if currentNode != nil {
-//		for !currentNode.isLeaf {
-//			currentNode = currentNode.left
-//		}
-//		return currentNode
-//	}
-//
-//	return nil
-//}
-//
-//func (n *Node) Explode(level int) bool {
-//
-//	somethingHappen := false
-//
-//	if level > 4 && n.left != nil && n.right != nil && n.left.isLeaf && n.right.isLeaf {
-//		//fmt.Println("Exploding:", n.left.value, n.right.value)
-//		left := n.FindLeftLeafNode()
-//		if left != nil {
-//			left.value += n.left.value
-//		}
-//		right := n.FindRightLeafNode()
-//		if right != nil {
-//			right.value += n.right.value
-//		}
-//		n.isLeaf = true
-//		n.value = 0
-//		n.left = nil
-//		n.right = nil
-//		somethingHappen = true
-//	}
-//	if n.left != nil {
-//		somethingHappenInChild := n.left.Explode(level + 1)
-//		somethingHappen = somethingHappen || somethingHappenInChild
-//	}
-//	if n.right != nil {
-//		somethingHappenInChild := n.right.Explode(level + 1)
-//		somethingHappen = somethingHappen || somethingHappenInChild
-//	}
-//
-//	return somethingHappen
-//}
-//
-//func (n *Node) Split() bool {
-//	nodesToSplit := n.SelectNodeToSplit()
-//
-//	//for _, nodeToSplit := range nodesToSplit {
-//	if len(nodesToSplit) > 0 {
-//		// Split only first node
-//		nodeToSplit := nodesToSplit[0]
-//		//fmt.Println("Spliting:", nodeToSplit.value)
-//		nodeToSplit.isLeaf = false
-//		nodeToSplit.left = &Node{
-//			parent: nodeToSplit,
-//			isLeaf: true,
-//			value:  int64(math.Floor(float64(nodeToSplit.value) / 2.0)),
-//		}
-//		nodeToSplit.right = &Node{
-//			parent: nodeToSplit,
-//			isLeaf: true,
-//			value:  int64(math.Ceil(float64(nodeToSplit.value) / 2.0)),
-//		}
-//	}
-//
-//	return len(nodesToSplit) > 0
-//}
-//
-//func (n *Node) SelectNodeToSplit() []*Node {
-//
-//	selectedNodes := make([]*Node, 0)
-//
-//	if n.isLeaf && n.value >= 10 {
-//		//fmt.Println("Spliting:", n.value)
-//		//n.isLeaf = false
-//		//n.left = &Node{
-//		//	parent: n,
-//		//	isLeaf: true,
-//		//	value:  int64(math.Floor(float64(n.value) / 2.0)),
-//		//}
-//		//n.right = &Node{
-//		//	parent: n,
-//		//	isLeaf: true,
-//		//	value:  int64(math.Ceil(float64(n.value) / 2.0)),
-//		//}
-//
-//		selectedNodes = append(selectedNodes, n)
-//	}
-//	if n.left != nil {
-//		childNodes := n.left.SelectNodeToSplit()
-//		selectedNodes = append(selectedNodes, childNodes...)
-//	}
-//	if n.right != nil {
-//		childNodes := n.right.SelectNodeToSplit()
-//		selectedNodes = append(selectedNodes, childNodes...)
-//
-//	}
-//
-//	return selectedNodes
-//}
-//
-//func (n *Node) Magnitude() int64 {
-//
-//	var magnitude int64 = 0
-//
-//	if n.isLeaf {
-//		if n.parent.left == n {
-//			magnitude += n.value
-//		} else {
-//			magnitude += n.value
-//		}
-//	} else {
-//		magnitude += 3*n.left.Magnitude() + 2*n.right.Magnitude()
-//	}
-//
-//	return magnitude
-//}

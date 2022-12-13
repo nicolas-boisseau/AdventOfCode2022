@@ -111,61 +111,6 @@ func Test_ReadNode4(t *testing.T) {
 	assert.Equal(t, sample, n.String())
 }
 
-func Test_Add_Nodes(t *testing.T) {
-	n1Str := "[1,2]"
-	n2Str := "[[3,4],5]"
-	n1 := ReadNode(n1Str)
-	n2 := ReadNode(n2Str)
-
-	n3 := Add(n1, n2)
-
-	fmt.Println(n3)
-	assert.Equal(t, "[[1,2],[[3,4],5]]", n3.String())
-}
-
-func Test_Next(t *testing.T) {
-	n1 := ReadNode("[4,3,2,1,0]")
-
-	visited := make(map[*Node]bool)
-
-	curNode, _ := n1.Next(visited)
-	assert.Equal(t, "4", curNode.String())
-	curNode, _ = curNode.Next(visited)
-	assert.Equal(t, "3", curNode.String())
-	curNode, _ = curNode.Next(visited)
-	assert.Equal(t, "2", curNode.String())
-	curNode, _ = curNode.Next(visited)
-	assert.Equal(t, "1", curNode.String())
-	curNode, _ = curNode.Next(visited)
-	assert.Equal(t, "0", curNode.String())
-	curNode, _ = curNode.Next(visited)
-	assert.Nil(t, curNode)
-}
-
-func Test_Next2(t *testing.T) {
-	curNode := ReadNode("[[1],[2,3,4]]")
-
-	visited := make(map[*Node]bool)
-
-	curNode, _ = curNode.Next(visited)
-	assert.Equal(t, "[1]", curNode.String())
-	curNode, _ = curNode.Next(visited)
-	assert.Equal(t, "1", curNode.String())
-	curNode, _ = curNode.Next(visited)
-	assert.Equal(t, "[2,3,4]", curNode.String())
-	curNode, _ = curNode.Next(visited)
-	assert.Equal(t, "2", curNode.String())
-	curNode, _ = curNode.Next(visited)
-	assert.Equal(t, "3", curNode.String())
-	curNode, _ = curNode.Next(visited)
-	assert.Equal(t, "4", curNode.String())
-	curNode, _ = curNode.Next(visited)
-	assert.Nil(t, curNode)
-	//assert.Equal(t, int64(1), curNode.Next(visited).value)
-	//assert.Equal(t, int64(0), curNode.Next(visited).Next(visited).value)
-	//assert.Equal(t, nil, curNode.Next(visited).Next(visited).Next(visited))
-}
-
 func Test_Compare(t *testing.T) {
 	n1 := ReadNode("[1,1,3,1,1]")
 	n2 := ReadNode("[1,1,5,1,1]")
@@ -227,15 +172,28 @@ func Test_Compare7(t *testing.T) {
 }
 
 func Test_Compare8(t *testing.T) {
-	n1 := ReadNode("[[[2,7,[10,6,0],[10]],[[1,6,9],9],[[2],[],1,[8]]],[[]]]")
-	n2 := ReadNode("[[],[5,9,3,[9,[10,8,10,1],6],[3]],[[10,3,[6,5,1,5]]],[5,[]]]")
+	s1 := "[[],[],[5,4,0,10,7],[2,[[],2,0,[7,4,7,7,10],[]],[]]]"
+	s2 := "[[],[],[[5,[2,2,8,5,7],3,9,[4,6,0,2,0]],1,7,0],[],[[[7,6,5],9,[2,2,10,5,6]],4,[0,[],[9,4,1,8]],8,7]]"
+	n1 := ReadNode(s1)
+	n2 := ReadNode(s2)
 
 	fmt.Println(n1.String())
 	fmt.Println(n2.String())
 
-	assert.Equal(t, 1, n1.CompareReal(n2))
+	assert.Equal(t, -1, n1.CompareReal(n2))
 }
 
+func Test_Compare9(t *testing.T) {
+	s1 := "[[],[10,[5],[],[6,[2,4,4,8,9],[0,0,8,9],[8],4]],[5,[],7,3,[[5],[8,9,1],7,[9]]],[6,5]]"
+	s2 := "[[],[[10],9,5,9,1],[7,4,[]],[6,[10,6,[2],[5,10,4,9]]]]"
+	n1 := ReadNode(s1)
+	n2 := ReadNode(s2)
+
+	fmt.Println(n1.String())
+	fmt.Println(n2.String())
+
+	assert.Equal(t, -1, n1.CompareReal(n2))
+}
 func Test_CompareEmptyNodes(t *testing.T) {
 	n1 := ReadNode("[[]]")
 	n2 := ReadNode("[]")
@@ -247,4 +205,15 @@ func Test_CompareEmptyNodes(t *testing.T) {
 
 	fmt.Println(n1.String())
 	fmt.Println(n2.String())
+}
+
+func Test_Compare_SuspiciousNodes(t *testing.T) {
+
+	n1 := ReadNode("[[],[],[5,4,0,10,7],[2,[[],2,0,[7,4,7,7,10],[]],[]]]")
+	n2 := ReadNode("[[],[],[7,[0,[0,6,6,9,4],[],[8,3]],3,7,10]]")
+
+	fmt.Println(n1.String())
+	fmt.Println(n2.String())
+
+	assert.Equal(t, -1, n1.CompareReal(n2))
 }
