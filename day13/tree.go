@@ -17,6 +17,8 @@ type Node struct {
 	//right  *Node
 	childs []*Node
 	parent *Node
+	//visited bool
+	isValid bool
 }
 
 func (n *Node) String() string {
@@ -78,6 +80,7 @@ func ReadNode(str string) *Node {
 			currentNode = &child
 		} else if string(str[offset]) == "," {
 			currentNode = currentNode.parent
+			currentNode.isValid = true
 			child := Node{
 				parent: currentNode,
 				isLeaf: false,
@@ -86,8 +89,13 @@ func ReadNode(str string) *Node {
 			currentNode.childs = append(currentNode.childs, &child)
 			currentNode = &child
 		} else if string(str[offset]) == "]" {
+			//if currentNode.parent == &root && linq.From(currentNode.parent.childs).AllT(func(n *Node) bool { return !n.isValid }) {
+			//	currentNode.parent.childs = []*Node{}
+			//}
 			currentNode = currentNode.parent
 		} else {
+			currentNode.isValid = true
+
 			nextComma := strings.Index(str[offset:], ",")
 			rightLimit := nextComma // default
 			nextClosingSquareBrace := strings.Index(str[offset:], "]")
@@ -124,46 +132,99 @@ func IndexOf(list []*Node, toSearch *Node) int {
 	return -1
 }
 
-func (n *Node) Next() *Node {
+func (n *Node) NextInListNotVisited(visited map[*Node]bool) (*Node, bool) {
 
-	if n.isLeaf {
-		if n.parent != nil {
-			index := IndexOf(n.parent.childs, n)
-			if index+1 < len(n.parent.childs) {
-				return n.parent.childs[index+1]
-			} else {
-				n.parent.Next()
-			}
-		}
-	} else {
-		index := IndexOf(n.parent.childs, n)
-		if index+1 < len(n.parent.childs) {
-			return n.parent.childs[index+1]
+	for _, n := range n.childs {
+		if !visited[n] {
+			return n, false
 		}
 	}
 
-	return nil
+	//fmt.Println(n, "is running out of items !")
+
+	if n.parent != nil {
+		res, _ := n.parent.NextInListNotVisited(visited)
+		return res, true
+	}
+
+	return n.parent, true
 }
 
-func (n *Node) Compare(n2 *Node) int {
+func (n *Node) Next(visited map[*Node]bool) (*Node, bool) {
 
-	result := 999
-	next1 := n
-	next2 := n2
-	for next1 != nil && next2 != nil {
+	visited[n] = true
 
-		next1 = next1.Next()
-		next2 = next2.Next()
+	return n.NextInListNotVisited(visited)
+}
 
-		if next1.value < next2.value {
-			return -1
-		} else if next1.value == next2.value {
-			return 0
+func (n *Node) CompareReal(n2 *Node) int {
+	visited := make(map[*Node]bool)
+	return n.Compare2(n2, visited)
+}
+
+func (n *Node) Compare2(n2 *Node, visited map[*Node]bool) int {
+
+	fmt.Println("Comparing: ", n, "with", n2)
+
+	left, leftOutOfItems := n.Next(visited)
+	right, rightOutOfItems := n2.Next(visited)
+
+	if leftOutOfItems && !rightOutOfItems {
+		return -1
+	} else if !leftOutOfItems && rightOutOfItems {
+		return 1
+	}
+
+	fmt.Println("Next() compare: ", left, "with", right)
+
+	if left == nil {
+		return -1
+	} else if right == nil {
+		return 1
+	}
+
+	if !left.isLeaf {
+		if right.isLeaf {
+			rr := &Node{
+				isLeaf: false,
+				childs: []*Node{&Node{isLeaf: true, value: right.value, childs: []*Node{}, parent: right}},
+				parent: right.parent,
+			}
+			visited[rr] = visited[left]
+
+			//right.isLeaf = false
+			//right.childs = []*Node{&Node{isLeaf: true, value: right.value, childs: []*Node{}, parent: right, visited: right.visited}}
+			return left.Compare2(rr, visited)
 		}
+
+		if left == nil {
+			return -1
+		} else if right == nil {
+			return 1
+		}
+
+		return left.Compare2(right, visited)
+
+	} else if !right.isLeaf {
+		ll := &Node{
+			isLeaf: false,
+			childs: []*Node{&Node{isLeaf: true, value: left.value, childs: []*Node{}, parent: left}},
+			parent: left.parent,
+		}
+		visited[ll] = visited[left]
+		//left.isLeaf = false
+		//left.childs = []*Node{&Node{isLeaf: true, value: left.value, childs: []*Node{}, parent: left, visited: left.visited}}
+		return ll.Compare2(right, visited)
+	}
+
+	if left.value < right.value {
+		return -1
+	} else if left.value > right.value {
+		return 1
 	}
 
 	// return -1 for <, 0 for == or 1 for >
-	return result
+	return left.Compare2(right, visited)
 }
 
 //
