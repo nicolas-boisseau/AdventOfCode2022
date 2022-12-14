@@ -33,10 +33,12 @@ func newGrid(h int, w int) *Grid {
 
 func (g *Grid) String() string {
 	output := bytes.NewBufferString("")
-	for i := range g.content {
-		for j := range g.content[i] {
-			if g.content[i][j] == 99 {
+	for y := range g.content {
+		for x := range g.content[y] {
+			if g.content[y][x] == 99 {
 				fmt.Fprint(output, "#")
+			} else if g.content[y][x] == 100 {
+				fmt.Fprint(output, "o")
 			} else {
 				fmt.Fprint(output, ".")
 			}
@@ -69,6 +71,45 @@ func (g *Grid) drawSegment(s Segment) {
 	}
 }
 
+func (g *Grid) DropSandAt(startPos Point) bool {
+
+	isInRange := func(y, x int) bool {
+		return x >= 0 && y >= 0 && y < g.h && x < g.w
+	}
+
+	sand := startPos
+
+	sandAtRest := false
+	for !sandAtRest && (isInRange(sand.y+1, sand.x) || isInRange(sand.y+1, sand.x-1) || isInRange(sand.y+1, sand.x+1)) {
+		if isInRange(sand.y+1, sand.x) && g.content[sand.y+1][sand.x] < 99 {
+			sand.y++
+		} else if isInRange(sand.y+1, sand.x-1) && g.content[sand.y+1][sand.x-1] < 99 {
+			sand.y++
+			sand.x--
+		} else if isInRange(sand.y+1, sand.x+1) && g.content[sand.y+1][sand.x+1] < 99 {
+			sand.y++
+			sand.x++
+		} else {
+			g.content[sand.y][sand.x] = 100
+			sandAtRest = true
+		}
+	}
+
+	return sandAtRest // false if lost in infinite cave......
+}
+
+func (g *Grid) SumOfSand() int {
+	result := 0
+	for y := range g.content {
+		for x := range g.content[y] {
+			if g.content[y][x] == 100 {
+				result++
+			}
+		}
+	}
+	return result
+}
+
 func Process(fileName string, complex bool) int {
 	lines := common.ReadLinesFromFile(fileName)
 
@@ -95,15 +136,32 @@ func Process(fileName string, complex bool) int {
 		}
 	}
 
+	allPoints = append(allPoints, Point{x: 500, y: 0})
+
 	maxX := linq.From(allPoints).SelectT(func(p Point) int { return p.x }).Max().(int)
 	maxY := linq.From(allPoints).SelectT(func(p Point) int { return p.y }).Max().(int)
 
-	g := newGrid(maxY+1, maxX+1)
+	if complex {
+		maxY += 2
+
+		segments = append(segments, Segment{
+			start: Point{y: maxY, x: 0},
+			end:   Point{y: maxY, x: maxX + 499},
+		})
+	}
+
+	g := newGrid(maxY+1, maxX+500)
 	for _, s := range segments {
 		g.drawSegment(s)
 	}
 
-	fmt.Println(g)
+	notLost := g.DropSandAt(Point{x: 500, y: 0})
+	for notLost && g.content[0][500] != 100 {
+		//fmt.Println(g)
+		notLost = g.DropSandAt(Point{x: 500, y: 0})
+	}
 
-	return 0
+	//fmt.Println(g)
+
+	return g.SumOfSand()
 }
