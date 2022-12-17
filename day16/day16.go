@@ -8,15 +8,15 @@ import (
 	"strings"
 )
 
-type Valve struct {
-	name          string
-	rate          int
-	NextValvesStr []string
-	NextValves    []*Valve
-	isOpened      bool
-}
+//type Valve struct {
+//	name          string
+//	rate          int
+//	NextValvesStr []string
+//	NextValves    []*Node
+//	isOpened      bool
+//}
 
-func (v *Valve) String() string {
+func (v *Node) String() string {
 	output := bytes.NewBufferString("")
 	fmt.Fprintln(output, "Valve : ", v.name, "at rate", v.rate, " leading to :")
 	for _, otherV := range v.NextValves {
@@ -26,12 +26,12 @@ func (v *Valve) String() string {
 	return output.String()
 }
 
-func GetValve(valves []*Valve, name string) *Valve {
-	return linq.From(valves).FirstWithT(func(vv *Valve) bool { return vv.name == name }).(*Valve)
+func GetValve(valves []*Node, name string) *Node {
+	return linq.From(valves).FirstWithT(func(vv *Node) bool { return vv.name == name }).(*Node)
 }
 
-func ExtractValves(lines []string) []*Valve {
-	valves := make([]*Valve, 0)
+func ExtractValves(lines []string) []*Node {
+	valves := make([]*Node, 0)
 	for _, line := range lines {
 
 		var valve string
@@ -52,11 +52,11 @@ func ExtractValves(lines []string) []*Valve {
 		//fmt.Println(valve, rate, ":")
 		//fmt.Println(splittedLeadToValves)
 
-		valves = append(valves, &Valve{
+		valves = append(valves, &Node{
 			name:          valve,
 			rate:          rate,
 			NextValvesStr: splittedLeadToValves,
-			NextValves:    make([]*Valve, 0),
+			NextValves:    make([]*Node, 0),
 		})
 	}
 
@@ -70,75 +70,110 @@ func ExtractValves(lines []string) []*Valve {
 	return valves
 }
 
-func FindBestNextValve(nextValves []*Valve, visited map[*Valve]bool) (*Valve, bool) {
+func FindBestPath(valves []*Node, v1Name, v2Name string) []*Node {
 
-	var bestNextValve *Valve
-	if linq.From(nextValves).
-		AnyWithT(func(valve *Valve) bool { return !valve.isOpened }) {
-		bestNextValve = linq.From(nextValves).
-			WhereT(func(valve *Valve) bool { return !valve.isOpened }).
-			OrderByDescendingT(func(valve *Valve) int { return valve.rate }).First().(*Valve)
+	for _, v := range valves {
+		v.parent = nil
 	}
 
-	var nextBestValve *Valve
-	var nextNextBestValve *Valve
-	if bestNextValve == nil {
-		// must find a nextValve which can access to a better pressure
-		for _, nextV := range nextValves {
-			if !visited[nextV] {
-				visited[nextV] = true
-				bestNextValve, _ = FindBestNextValve(nextV.NextValves, visited)
-
-				if nextNextBestValve == nil || (bestNextValve != nil && bestNextValve.rate > nextNextBestValve.rate) {
-					nextNextBestValve = bestNextValve
-					nextBestValve = nextV
-				}
-			}
-		}
-
-		return nextBestValve, true
-	}
-
-	return bestNextValve, true
-}
-
-func FindBestPath(valves []*Valve, v1, v2 string) int {
+	v1 := linq.From(valves).FirstWithT(func(node *Node) bool { return node.name == v1Name }).(*Node)
+	v2 := linq.From(valves).FirstWithT(func(node *Node) bool { return node.name == v2Name }).(*Node)
 
 	// set nodes to the config
 	aConfig := Config{
 		GridWidth:     len(valves),
 		GridHeight:    len(valves),
-		InvalidNodes:  []Node{},
-		WeightedNodes: []Node{},
+		InvalidNodes:  []*Node{},
+		WeightedNodes: []*Node{},
 	}
 
 	// create the algo with defined config
 	algo, err := New(aConfig)
 	if err != nil {
 		fmt.Println("invalid astar config", err)
-		return -1
+		return []*Node{}
 	}
 
 	// run it
 	foundPath, err := algo.FindPath(v1, v2)
 	if err != nil || len(foundPath) == 0 {
 		fmt.Println("No path found ...")
-		return -1
+		return []*Node{}
 	}
 
-	return len(foundPath)
+	//fmt.Println("FOUND PATH :")
+	orderedPath := make([]*Node, 0)
+	for i := len(foundPath) - 1; i >= 0; i-- {
+		//fmt.Println(foundPath[i].name, " -> ")
+		orderedPath = append(orderedPath, foundPath[i])
+	}
+
+	return orderedPath
 }
 
-func CurrentPressure(valves []*Valve) int {
+func FindBestNextMove(allValves []*Node, node *Node) *Node {
+
+	pathTo := make(map[string][]*Node)
+	for _, v := range allValves {
+		if v == node {
+			continue
+		}
+		path := FindBestPath(allValves, node.name, v.name)
+		if indexOf(node.NextValvesStr, path[0].name) != -1 {
+			pathTo[v.name] = path
+		}
+	}
+
+	var nextBests []*Node
+	linq.From(allValves).
+		WhereT(func(n *Node) bool {
+			return !n.isOpened &&
+				n.name != node.name
+		}).
+		OrderByDescendingT(func(n *Node) int {
+			totalPotential := n.rate - len(pathTo[n.name])
+
+			for _, intermediate := range pathTo[n.name] {
+				if !intermediate.isOpened && intermediate != n {
+					totalPotential += intermediate.rate
+				}
+			}
+
+			return totalPotential
+		}).
+		ToSlice(&nextBests)
+
+	if len(nextBests) > 0 {
+		return pathTo[nextBests[0].name][0]
+	} else {
+		return nil
+	}
+}
+
+func CurrentPressure(valves []*Node) int {
 	return int(linq.From(valves).
-		WhereT(func(valve *Valve) bool { return valve.isOpened }).
-		SelectT(func(valve *Valve) int { return valve.rate }).SumInts())
+		WhereT(func(valve *Node) bool { return valve.isOpened }).
+		SelectT(func(valve *Node) int { return valve.rate }).SumInts())
 }
 
 func Process(fileName string, complex bool) int {
 	lines := common.ReadLinesFromFile(fileName)
 
 	valves := ExtractValves(lines)
+
+	pathTo := make(map[string][]*Node)
+	for _, v := range valves {
+		for _, v2 := range valves {
+			if v == v2 {
+				continue
+			}
+			pathTo[v2.name] = FindBestPath(valves, v.name, v2.name)
+		}
+
+		v.pathTo = pathTo
+	}
+
+	//FindBestPath(valves, "DD", "BB")
 
 	currentValve := GetValve(valves, "AA")
 	currentValve.isOpened = true
@@ -155,10 +190,8 @@ func Process(fileName string, complex bool) int {
 			fmt.Println("Open valve", currentValve.name)
 			currentValve.isOpened = true
 		} else {
-
-			visited := make(map[*Valve]bool)
-			bestNextValve, needMove := FindBestNextValve(currentValve.NextValves, visited)
-			if needMove {
+			bestNextValve := FindBestNextMove(valves, currentValve)
+			if bestNextValve != nil {
 				fmt.Println("Move to valve", bestNextValve.name)
 				currentValve = bestNextValve
 			}
@@ -169,5 +202,5 @@ func Process(fileName string, complex bool) int {
 		fmt.Println()
 	}
 
-	return len(lines)
+	return totalPressure
 }

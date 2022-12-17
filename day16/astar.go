@@ -3,7 +3,6 @@ package day16
 import (
 	"errors"
 	"fmt"
-	"math"
 )
 
 // Node represents a simple node
@@ -18,16 +17,23 @@ type Node struct {
 	X, Y      int
 	Weighting int
 	parent    *Node
+
+	name          string
+	rate          int
+	NextValvesStr []string
+	NextValves    []*Node
+	isOpened      bool
+	pathTo        map[string][]*Node
 }
 
 // String returns formatted values of the node
-func (n Node) String() string {
-	return fmt.Sprintf("Node [X:%d Y:%d F:%d G:%d H:%d]", n.X, n.Y, n.f, n.g, n.h)
-}
+//func (n Node) String() string {
+//	return fmt.Sprintf("Node [X:%d Y:%d F:%d G:%d H:%d]", n.X, n.Y, n.f, n.g, n.h)
+//}
 
 // List represents a list of nodes
 type List struct {
-	nodes []Node
+	nodes []*Node
 }
 
 // NewList creates a new list
@@ -36,18 +42,18 @@ func NewList() *List {
 }
 
 // Add one or more nodes to the list
-func (l *List) Add(nodes ...Node) {
+func (l *List) Add(nodes ...*Node) {
 	l.nodes = append(l.nodes, nodes...)
 }
 
 // All returns the full list of nodes
-func (l *List) All() []Node {
+func (l *List) All() []*Node {
 	return l.nodes
 }
 
 // Remove a node from the list
 // if the node is not found we do nothing
-func (l *List) Remove(removeNode Node) {
+func (l *List) Remove(removeNode *Node) {
 	index := l.GetIndex(removeNode)
 	if index >= 0 {
 		l.nodes = append(l.nodes[:index], l.nodes[index+1:]...)
@@ -56,9 +62,12 @@ func (l *List) Remove(removeNode Node) {
 
 // GetIndex returns the index of the node in the list
 // if the node is not found the return value is -1
-func (l *List) GetIndex(searchNode Node) int {
+func (l *List) GetIndex(searchNode *Node) int {
 	for index, node := range l.nodes {
-		if node.X == searchNode.X && node.Y == searchNode.Y {
+		//if node.X == searchNode.X && node.Y == searchNode.Y {
+		//	return index
+		//}
+		if node.name == searchNode.name {
 			return index
 		}
 	}
@@ -66,7 +75,7 @@ func (l *List) GetIndex(searchNode Node) int {
 }
 
 // Contains check if a node is in the list
-func (l *List) Contains(searchNode Node) bool {
+func (l *List) Contains(searchNode *Node) bool {
 	return l.GetIndex(searchNode) >= 0
 }
 
@@ -77,7 +86,7 @@ func (l *List) IsEmpty() bool {
 
 // Clear removes all nodes from the list
 func (l *List) Clear() {
-	l.nodes = []Node{}
+	l.nodes = []*Node{}
 }
 
 // GetIndexOfMinF returns the index of the nodes list
@@ -85,7 +94,7 @@ func (l *List) Clear() {
 //
 // if no node is found it returns -1
 func (l *List) GetIndexOfMinF() int {
-	lastNode := Node{}
+	lastNode := &Node{}
 	lastNodeIndex := -1
 	for index, node := range l.nodes {
 		if lastNodeIndex == -1 || node.f < lastNode.f {
@@ -97,10 +106,10 @@ func (l *List) GetIndexOfMinF() int {
 }
 
 // GetMinFNode returns the node with the smallest node.F value
-func (l *List) GetMinFNode() (Node, error) {
+func (l *List) GetMinFNode() (*Node, error) {
 	minFIndex := l.GetIndexOfMinF()
 	if minFIndex == -1 {
-		return Node{}, errors.New("no node found")
+		return &Node{}, errors.New("no node found")
 	}
 	return l.nodes[minFIndex], nil
 }
@@ -115,14 +124,14 @@ func (l *List) GetMinFNode() (Node, error) {
 // WeightedNodes can be used to add nodes to be avoided like mud or mountains
 type Config struct {
 	GridWidth, GridHeight int
-	InvalidNodes          []Node
-	WeightedNodes         []Node
+	InvalidNodes          []*Node
+	WeightedNodes         []*Node
 }
 
 type astar struct {
 	config               Config
 	openList, closedList List
-	startNode, endNode   Node
+	startNode, endNode   *Node
 }
 
 // New creates a new astar instance
@@ -142,18 +151,32 @@ func (a *astar) init() *astar {
 	return a
 }
 
-// H caluclates the absolute distance between
+// H calculates the absolute distance between
 // nodeA and nodeB calculates by the manhattan distance
-func (a *astar) H(nodeA Node, nodeB Node) int {
-	absX := math.Abs(float64(nodeA.X - nodeB.X))
-	absY := math.Abs(float64(nodeA.Y - nodeB.Y))
-	return int(absX + absY)
+func (a *astar) H(nodeA *Node, nodeB *Node) int {
+	//absX := math.Abs(float64(nodeA.X - nodeB.X))
+	//absY := math.Abs(float64(nodeA.Y - nodeB.Y))
+	//return int(absX + absY)
+
+	//totalPotential := 0
+	//if !nodeB.isOpened {
+	//	totalPotential = nodeB.rate - len(nodeA.pathTo[nodeB.name])
+	//}
+	//
+	//for _, intermediate := range nodeA.pathTo[nodeB.name] {
+	//	if !intermediate.isOpened && intermediate != nodeB {
+	//		totalPotential += intermediate.rate - 1
+	//	}
+	//}
+	//
+	//return totalPotential
+	return nodeB.rate
 }
 
 // GetNeighborNodes calculates the next neighbors of the given node
 // if a neighbor node is not accessible the node will be ignored
-func (a *astar) GetNeighborNodes(node Node) []Node {
-	var neighborNodes []Node
+func (a *astar) GetNeighborNodes(node *Node) []*Node {
+	var neighborNodes []*Node
 
 	//upNode := Node{X: node.X, Y: node.Y + 1, parent: &node}
 	//if a.isAccessible(upNode) {
@@ -176,19 +199,20 @@ func (a *astar) GetNeighborNodes(node Node) []Node {
 	//}
 
 	// SPECIFIC DAY 16
-	neighborNodes =
+	neighborNodes = node.NextValves
 
 	return neighborNodes
 }
 
 // isAccessible checks if the node is reachable in the grid
 // and is not in the invalidNodes slice
-func (a *astar) isAccessible(node Node) bool {
+func (a *astar) isAccessible(node *Node) bool {
 
+	// REMOVED FOR DAY 16
 	// if node is out of bound
-	if node.X < 0 || node.Y < 0 || node.X > a.config.GridWidth-1 || node.Y > a.config.GridHeight-1 {
-		return false
-	}
+	//if node.X < 0 || node.Y < 0 || node.X > a.config.GridWidth-1 || node.Y > a.config.GridHeight-1 {
+	//	return false
+	//}
 
 	// check if the node is in the closedList
 	// the predefined invalidNodes are also in this list
@@ -209,15 +233,16 @@ func (a *astar) isAccessible(node Node) bool {
 
 // IsEndNode checks if the given node has
 // equal node coordinates with the end node
-func (a *astar) IsEndNode(checkNode, endNode Node) bool {
-	return checkNode.X == endNode.X && checkNode.Y == endNode.Y
+func (a *astar) IsEndNode(checkNode, endNode *Node) bool {
+	return checkNode.name == endNode.name
+	//return checkNode.X == endNode.X && checkNode.Y == endNode.Y
 }
 
 // FindPath starts the a* algorithm for the given start and end node
 // The return value will be the fastest way represented as a nodes slice
 //
 // If no path was found it returns nil and an error
-func (a *astar) FindPath(startNode, endNode Node) ([]Node, error) {
+func (a *astar) FindPath(startNode, endNode *Node) ([]*Node, error) {
 
 	a.startNode = startNode
 	a.endNode = endNode
@@ -228,7 +253,6 @@ func (a *astar) FindPath(startNode, endNode Node) ([]Node, error) {
 	}()
 
 	a.openList.Add(startNode)
-
 	for !a.openList.IsEmpty() {
 
 		currentNode, err := a.openList.GetMinFNode()
@@ -241,7 +265,7 @@ func (a *astar) FindPath(startNode, endNode Node) ([]Node, error) {
 
 		// we found the path
 		if a.IsEndNode(currentNode, endNode) {
-			return a.getNodePath(currentNode), nil
+			return a.getNodePath(currentNode, startNode), nil
 		}
 
 		neighbors := a.GetNeighborNodes(currentNode)
@@ -250,8 +274,10 @@ func (a *astar) FindPath(startNode, endNode Node) ([]Node, error) {
 				continue
 			}
 
+			neighbor.parent = currentNode
+
 			// disabled for DAY 15
-			//a.calculateNode(&neighbor)
+			a.calculateNode(neighbor)
 
 			if !a.openList.Contains(neighbor) {
 				a.openList.Add(neighbor)
@@ -269,27 +295,27 @@ func (a *astar) calculateNode(node *Node) {
 	node.g++
 
 	// check for special node weighting
-	for _, wNode := range a.config.WeightedNodes {
-		if node.X == wNode.X && node.Y == wNode.Y {
-			node.g = node.g + wNode.Weighting
-		}
-	}
+	//for _, wNode := range a.config.WeightedNodes {
+	//	if node.X == wNode.X && node.Y == wNode.Y {
+	//		node.g = node.g + wNode.Weighting
+	//	}
+	//}
 
-	node.h = a.H(*node, a.endNode)
+	node.h = a.H(node, a.endNode)
 	node.f = node.g + node.h
 }
 
 // getNodePath returns the chain of parent nodes
 // the given node will be still included in the nodes slice
-func (a *astar) getNodePath(currentNode Node) []Node {
-	var nodePath []Node
+func (a *astar) getNodePath(currentNode *Node, startNode *Node) []*Node {
+	var nodePath []*Node
 	nodePath = append(nodePath, currentNode)
 	for {
 		if currentNode.parent == nil {
 			break
 		}
 
-		parentNode := *currentNode.parent
+		parentNode := currentNode.parent
 
 		// if the end of node chain
 		if parentNode.parent == nil {
