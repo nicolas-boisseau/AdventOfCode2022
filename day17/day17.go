@@ -49,13 +49,14 @@ type Env struct {
 	jets                   string
 	jetIndex               int
 	debug                  bool
+	floorY                 int
 }
 
 func (env *Env) DropRock(rock *Rock) {
 	isInRange := func(r *Rock, dY, dX int) bool {
 		newY := r.pos.y + dY
 		newX := r.pos.x + dX
-		inSpace := newX >= 1 && newY >= 1 && newY < env.maxY && newX < env.maxX-2
+		inSpace := newX > env.minX && newY > env.floorY && newX < env.maxX-1
 
 		if !inSpace {
 			return false
@@ -70,20 +71,21 @@ func (env *Env) DropRock(rock *Rock) {
 		return !rockIsBlocked
 	}
 
-	env.rocks = append(env.rocks, rock)
-
-	//fmt.Println("Starting new block fall")
-	env.PrintEnv()
-
-	falling := false
-	rockAtRest := false
-	for !rockAtRest && (!falling || isInRange(rock, -1, 0)) { // && (isInRange(rock, -1, 0)) || isInRange(rock, 0, -1) || isInRange(rock, 0, 1)
-
-		if falling && isInRange(rock, -1, 0) {
+	fall := func() bool {
+		if isInRange(rock, -1, 0) {
 			//fmt.Println("fall 1")
 			rock.pos.y--
-		} else if !falling && env.jets[env.jetIndex] == '<' {
-			//rock.pos.y--
+			return false
+		}
+
+		return true
+	}
+
+	move := func() {
+		jet := env.jets[env.jetIndex]
+		env.jetIndex = (env.jetIndex + 1) % len(env.jets)
+
+		if jet == '<' {
 			//fmt.Println("try move left 1")
 			if isInRange(rock, 0, -1) {
 				//fmt.Println("left 1")
@@ -91,8 +93,7 @@ func (env *Env) DropRock(rock *Rock) {
 			} else {
 				//fmt.Println("BLOCKED!")
 			}
-		} else if !falling && env.jets[env.jetIndex] == '>' {
-			//rock.pos.y--
+		} else if jet == '>' {
 			//fmt.Println("try move right 1")
 			if isInRange(rock, 0, 1) {
 				//fmt.Println("right 1")
@@ -100,25 +101,24 @@ func (env *Env) DropRock(rock *Rock) {
 			} else {
 				//fmt.Println("BLOCKED!")
 			}
-		} else {
-			rockAtRest = true
 		}
+	}
 
-		if !falling {
-			//fmt.Printf("incrementing jetIndex (before incrementing: %d)\n", env.jetIndex)
-			env.jetIndex = (env.jetIndex + 1) % len(env.jets)
-		}
+	env.rocks = append(env.rocks, rock)
 
-		falling = !falling
+	//fmt.Println("Starting new block fall")
+	env.PrintEnv()
+
+	rockAtRest := false
+	for !rockAtRest { // && (isInRange(rock, -1, 0)) || isInRange(rock, 0, -1) || isInRange(rock, 0, 1)
+
+		move()
+		rockAtRest = fall()
 
 		env.PrintEnv()
 
 		//fmt.Println("next...")
 	}
-
-	return
-	//return rockAtRest // false if lost in infinite cave......
-
 }
 
 func (env *Env) RockIsBlocked(r *Rock) bool {
@@ -128,7 +128,7 @@ func (env *Env) RockIsBlocked(r *Rock) bool {
 		rX1 := r.pos.x + p.x
 		rY1 := r.pos.y + p.y
 
-		if rX1 > env.maxX-2 || rX1 < env.minX+1 || rY1 < 1 {
+		if (rX1 >= env.maxX-1 || rX1 <= env.minX) || (rY1 <= env.floorY) {
 			return true
 		}
 	}
@@ -167,9 +167,6 @@ func (env *Env) MaxRocksY() int {
 		}
 	}
 
-	if maxY == 0 {
-		return 0 // start...
-	}
 	return maxY
 }
 
@@ -189,23 +186,6 @@ func (env *Env) CreateLineRock() *Rock {
 	return r
 }
 
-func (env *Env) CreateLRock() *Rock {
-	newMaxY := env.MaxRocksY() + 4
-	env.maxY = newMaxY + 3
-
-	r := &Rock{
-		points: []*Point{
-			&Point{0, 0},
-			&Point{1, 0},
-			&Point{2, 0},
-			&Point{2, 1},
-			&Point{2, 2},
-		},
-		pos: &Point{3, newMaxY},
-	}
-	return r
-}
-
 func (env *Env) CreateCrossRock() *Rock {
 	newMaxY := env.MaxRocksY() + 4
 	env.maxY = newMaxY + 3
@@ -217,6 +197,23 @@ func (env *Env) CreateCrossRock() *Rock {
 			&Point{1, 1},
 			&Point{1, 2},
 			&Point{2, 1},
+		},
+		pos: &Point{3, newMaxY},
+	}
+	return r
+}
+
+func (env *Env) CreateLRock() *Rock {
+	newMaxY := env.MaxRocksY() + 4
+	env.maxY = newMaxY + 3
+
+	r := &Rock{
+		points: []*Point{
+			&Point{0, 0},
+			&Point{1, 0},
+			&Point{2, 0},
+			&Point{2, 1},
+			&Point{2, 2},
 		},
 		pos: &Point{3, newMaxY},
 	}
@@ -255,43 +252,35 @@ func (env *Env) CreateSquareRock() *Rock {
 	return r
 }
 
-func Process(fileName string, complex bool) int {
+func Process(fileName string, complex bool, debug bool) int {
 	lines := common.ReadLinesFromFile(fileName)
 
 	e := &Env{
-		env:   make(map[string]int),
-		minX:  0,
-		maxX:  9,
-		minY:  0,
-		maxY:  1,
-		jets:  lines[0],
-		debug: false,
-		rocks: make([]*Rock, 0),
+		env:    make(map[string]int),
+		minX:   0,
+		maxX:   9,
+		minY:   0,
+		maxY:   0,
+		floorY: 0,
+		jets:   lines[0],
+		debug:  debug,
+		rocks:  make([]*Rock, 0),
 	}
 
-	funcs := make([]func() *Rock, 0)
-	funcs = append(funcs, func() *Rock {
-		return e.CreateLineRock()
-	})
-	funcs = append(funcs, func() *Rock {
-		return e.CreateCrossRock()
-	})
-	funcs = append(funcs, func() *Rock {
-		return e.CreateLRock()
-	})
-	funcs = append(funcs, func() *Rock {
-		return e.CreateTowerRock()
-	})
-	funcs = append(funcs, func() *Rock {
-		return e.CreateSquareRock()
-	})
+	rockFactory := make([]func() *Rock, 0)
+	rockFactory = append(rockFactory, func() *Rock { return e.CreateLineRock() })
+	rockFactory = append(rockFactory, func() *Rock { return e.CreateCrossRock() })
+	rockFactory = append(rockFactory, func() *Rock { return e.CreateLRock() })
+	rockFactory = append(rockFactory, func() *Rock { return e.CreateTowerRock() })
+	rockFactory = append(rockFactory, func() *Rock { return e.CreateSquareRock() })
 
 	towerHeight := 0
 	for i := 1; i <= 2022; i++ {
-		e.DropRock(funcs[(i-1)%len(funcs)]())
+		e.DropRock(rockFactory[(i-1)%len(rockFactory)]())
 
 		towerHeight = e.MaxRocksY()
-		if i > 2015 {
+		if i == 2022 {
+			e.debug = true
 			fmt.Println(i, "=", towerHeight)
 		}
 	}

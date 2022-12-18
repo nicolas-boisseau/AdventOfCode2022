@@ -7,27 +7,27 @@ import (
 )
 
 func Test_Process_Sample(t *testing.T) {
-	result := Process("sample.txt", false)
+	result := Process("sample.txt", false, false)
 
 	fmt.Println(result)
 	assert.Equal(t, 3068, result)
 }
 
 func Test_Process_Input(t *testing.T) {
-	result := Process("input.txt", false)
+	result := Process("input.txt", false, false)
 
 	fmt.Println(result)
 }
 
 func Test_Process_Sample_Complex(t *testing.T) {
-	result := Process("sample.txt", true)
+	result := Process("sample.txt", true, true)
 
 	fmt.Println(result)
 	assert.Equal(t, 93, result)
 }
 
 func Test_Process_Input_Complex(t *testing.T) {
-	result := Process("input.txt", true)
+	result := Process("input.txt", true, false)
 
 	fmt.Println(result)
 }
