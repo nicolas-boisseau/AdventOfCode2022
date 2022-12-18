@@ -287,12 +287,12 @@ func Process(fileName string, complex bool) int {
 	})
 
 	towerHeight := 0
-	for i := 0; i+1 <= 2022; i++ {
-		e.DropRock(funcs[i%len(funcs)]())
+	for i := 1; i <= 2022; i++ {
+		e.DropRock(funcs[(i-1)%len(funcs)]())
 
 		towerHeight = e.MaxRocksY()
-		if i+1 == 2022 {
-			fmt.Println(i+1, "=", towerHeight)
+		if i > 2015 {
+			fmt.Println(i, "=", towerHeight)
 		}
 	}
 
