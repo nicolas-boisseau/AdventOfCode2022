@@ -252,11 +252,35 @@ func (env *Env) CreateSquareRock() *Rock {
 	return r
 }
 
-func Process(fileName string, complex bool, debug bool) int {
+func (e *Env) PatternAtPos(y, x, h, w int) [][]bool {
+	pattern := make([][]bool, h)
+	for yy := h - 1; yy >= 0; yy-- {
+		pattern[yy] = make([]bool, w)
+		for xx := x; xx < w; xx++ {
+			if e.IsAnyRock(y+yy, xx) {
+				pattern[yy][xx] = true
+			}
+		}
+	}
+	return pattern
+}
+
+func IsSame(pattern1, pattern2 [][]bool) bool {
+	for y := 0; y < len(pattern1); y++ {
+		for x := 0; x < len(pattern1[y]); x++ {
+			if pattern1[y][x] != pattern2[y][x] {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func Process(fileName string, complex bool, debug bool, targetLevel int) int {
 	lines := common.ReadLinesFromFile(fileName)
 
 	e := &Env{
-		env:    make(map[string]int),
+		env:    make(map[string]int, 1000),
 		minX:   0,
 		maxX:   9,
 		minY:   0,
@@ -275,13 +299,49 @@ func Process(fileName string, complex bool, debug bool) int {
 	rockFactory = append(rockFactory, func() *Rock { return e.CreateSquareRock() })
 
 	towerHeight := 0
-	for i := 1; i <= 2022; i++ {
+	var patternToSearch [][]bool
+	for i := 1; i <= targetLevel; i++ {
 		e.DropRock(rockFactory[(i-1)%len(rockFactory)]())
 
 		towerHeight = e.MaxRocksY()
-		if i == 2022 {
-			e.debug = true
+		if i == targetLevel {
 			fmt.Println(i, "=", towerHeight)
+		}
+
+		if i == 1000 {
+			fmt.Println("searching pattern")
+			// recherche d'un pattern qui se répète
+			patternToSearch = e.PatternAtPos(towerHeight, 1, 15, e.maxX)
+
+			for y := 1; y < towerHeight; y++ {
+				patternToSearch2 := e.PatternAtPos(towerHeight-y, 1, 15, e.maxX)
+				if IsSame(patternToSearch, patternToSearch2) {
+					fmt.Println("PATTERN FOUND !!")
+					fmt.Println("DIFF = ", y)
+
+					return -1
+				}
+			}
+			fmt.Println("not found...")
+
+			e.debug = true
+			e.PrintEnv()
+			return -1
+		}
+
+		if len(e.env) == 1000 {
+
+			//newEnv := make(map[string]int, 1000)
+			//e.rocks = e.rocks[len(e.rocks)-1000:]
+			//for y := e.maxY - 1; y >= e.maxY-1000; y-- {
+			//	for x := e.minX; x < e.maxX; x++ {
+			//		index := fmt.Sprintf("%d,%d", y, x)
+			//		if elt, exists := e.env[index]; exists {
+			//			newEnv[index] = elt
+			//		}
+			//	}
+			//}
+			//e.env = newEnv
 		}
 	}
 
