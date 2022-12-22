@@ -2,6 +2,7 @@ package day17
 
 import (
 	"fmt"
+	"github.com/ahmetalpbalkan/go-linq"
 	"github.com/nicolas-boisseau/AdventOfCode2022/common"
 )
 
@@ -9,33 +10,6 @@ type Point struct {
 	x int
 	y int
 }
-
-//func (g *Grid) DropSandAt(startPos Point) bool {
-//
-//	isInRange := func(y, x int) bool {
-//		return x >= 0 && y >= 0 && y < g.h && x < g.w
-//	}
-//
-//	sand := startPos
-//
-//	sandAtRest := false
-//	for !sandAtRest && (isInRange(rock.pos.y+1, rock.pos.x) || isInRange(rock.pos.y+1, rock.pos.x-1) || isInRange(rock.pos.y+1, rock.pos.x+1)) {
-//		if isInRange(rock.pos.y+1, rock.pos.x) && g.content[rock.pos.y+1][rock.pos.x] < 99 {
-//			rock.pos.y++
-//		} else if isInRange(rock.pos.y+1, rock.pos.x-1) && g.content[rock.pos.y+1][rock.pos.x-1] < 99 {
-//			rock.pos.y++
-//			rock.pos.x--
-//		} else if isInRange(rock.pos.y+1, rock.pos.x+1) && g.content[rock.pos.y+1][rock.pos.x+1] < 99 {
-//			rock.pos.y++
-//			rock.pos.x++
-//		} else {
-//			g.content[rock.pos.y][rock.pos.x] = 100
-//			sandAtRest = true
-//		}
-//	}
-//
-//	return sandAtRest // false if lost in infinite cave......
-//}
 
 type Rock struct {
 	points []*Point
@@ -299,10 +273,13 @@ func Process(fileName string, complex bool, debug bool, targetLevel int) int {
 	rockFactory = append(rockFactory, func() *Rock { return e.CreateSquareRock() })
 
 	towerHeight := 0
+	patternTowerHeight := 0
 	var patternToSearch [][]bool
+	incrementByLevel := make(map[int]int)
 	for i := 1; i <= targetLevel; i++ {
 		e.DropRock(rockFactory[(i-1)%len(rockFactory)]())
 
+		previousTowerHeight := towerHeight
 		towerHeight = e.MaxRocksY()
 		if i == targetLevel {
 			fmt.Println(i, "=", towerHeight)
@@ -311,37 +288,44 @@ func Process(fileName string, complex bool, debug bool, targetLevel int) int {
 		if i == 1000 {
 			fmt.Println("searching pattern")
 			// recherche d'un pattern qui se répète
-			patternToSearch = e.PatternAtPos(towerHeight, 1, 15, e.maxX)
-
-			for y := 1; y < towerHeight; y++ {
-				patternToSearch2 := e.PatternAtPos(towerHeight-y, 1, 15, e.maxX)
-				if IsSame(patternToSearch, patternToSearch2) {
-					fmt.Println("PATTERN FOUND !!")
-					fmt.Println("DIFF = ", y)
-
-					return -1
-				}
-			}
-			fmt.Println("not found...")
-
-			e.debug = true
-			e.PrintEnv()
-			return -1
+			patternToSearch = e.PatternAtPos(towerHeight-15, 1, 15, e.maxX)
+			patternTowerHeight = towerHeight
 		}
 
-		if len(e.env) == 1000 {
+		if i >= 1001 {
 
-			//newEnv := make(map[string]int, 1000)
-			//e.rocks = e.rocks[len(e.rocks)-1000:]
-			//for y := e.maxY - 1; y >= e.maxY-1000; y-- {
-			//	for x := e.minX; x < e.maxX; x++ {
-			//		index := fmt.Sprintf("%d,%d", y, x)
-			//		if elt, exists := e.env[index]; exists {
-			//			newEnv[index] = elt
-			//		}
-			//	}
-			//}
-			//e.env = newEnv
+			incrementByLevel[i-1000] = towerHeight - previousTowerHeight
+
+			patternToSearch2 := e.PatternAtPos(towerHeight-15, 1, 15, e.maxX)
+			if IsSame(patternToSearch, patternToSearch2) {
+				fmt.Println("PATTERN FOUND !!")
+				i_diff := i - 1000
+				fmt.Println("i =", i, ", DIFF = ", i_diff)
+				fmt.Println("Tower height:", towerHeight, ", DIFF = ", towerHeight-patternTowerHeight)
+
+				fmt.Println("Increment by level :", incrementByLevel)
+				totalIncrement := linq.From(incrementByLevel).SelectT(func(kv linq.KeyValue) int { return kv.Value.(int) }).SumInts()
+				fmt.Println("TOTAL increment = ", totalIncrement)
+
+				j := i
+				for j+i_diff < targetLevel {
+					j += i_diff
+					towerHeight += int(totalIncrement)
+				}
+				// reste juste quelques niveaux!
+				lastLevel := 1
+				for j < targetLevel {
+					j++
+					towerHeight += incrementByLevel[lastLevel]
+					lastLevel++
+				}
+
+				// ça y est on y est !
+				fmt.Println(j)
+				fmt.Println(towerHeight)
+
+				return towerHeight
+			}
 		}
 	}
 
