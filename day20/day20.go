@@ -2,26 +2,14 @@ package day20
 
 import (
 	"fmt"
-	"github.com/ahmetalpbalkan/go-linq"
 	"github.com/nicolas-boisseau/AdventOfCode2022/common"
 	"strconv"
 )
 
 type Num struct {
 	n        int
-	pos      int
 	next     *Num
 	previous *Num
-}
-
-func FixPos(pos int, maxPos int) int {
-	if pos > maxPos {
-		return (pos + 1) % maxPos
-	} else if pos < 0 {
-		return FixPos(maxPos+pos, maxPos)
-	}
-
-	return pos
 }
 
 func Process(fileName string, complex bool) int {
@@ -29,15 +17,14 @@ func Process(fileName string, complex bool) int {
 
 	nums := make([]*Num, 0)
 
-	for i, line := range lines {
+	for _, line := range lines {
 		n, err := strconv.Atoi(line)
 		if err != nil {
 			fmt.Println(err)
 		}
 
 		nums = append(nums, &Num{
-			n:   n,
-			pos: i,
+			n: n,
 		})
 	}
 
@@ -62,58 +49,77 @@ func Process(fileName string, complex bool) int {
 	}
 
 	// Start !
-	for _, n := range nums {
-		diff := n.n
-		if n.n < 0 {
-			diff -= 1
-		}
-		newPos := FixPos(n.pos+diff, len(nums))
-		if newPos > n.pos {
-			// tout ce qui était avant a - 1
-			for i := n.pos; i <= newPos; i++ {
-				if i == n.pos {
-					continue
-				}
-				u := NumAtPos(nums, i)
-				u.pos--
-			}
-		} else if newPos < n.pos {
-			// tout ce qui était après a + 1
-			for i := n.pos; i >= newPos; i-- {
-				if i == n.pos {
-					continue
-				}
-				u := NumAtPos(nums, i)
-				u.pos++
-			}
-		}
+	var zeroNum *Num
+	for _, num := range nums {
 
-		n.pos = newPos
+		if num.n > 0 {
+			target := num.next
+			for i := 1; i < num.n; i++ {
+				target = target.next
+			}
+			// Replace current pos
+			old_next := num.next
+			old_prev := num.previous
+			old_prev.next = old_next
+			old_next.previous = old_prev
+			// Insert at new pos
+			old_target_next := target.next
+			target.next = num
+			old_target_next.previous = num
+			num.previous = target
+			num.next = old_target_next
+		} else if num.n < 0 {
+			target := num.previous
+			for i := -1; i > num.n; i-- {
+				target = target.previous
+			}
+			// Replace current pos
+			old_next := num.next
+			old_prev := num.previous
+			old_prev.next = old_next
+			old_next.previous = old_prev
+			// Insert at new pos
+			old_target_prev := target.previous
+			target.previous = num
+			old_target_prev.next = num
+			num.previous = old_target_prev
+			num.next = target
+		} else {
+			zeroNum = num
+		}
 
 		if fileName == "sample.txt" {
-			fmt.Println("After mixing ", n.n)
+			fmt.Println("After mixing ", num.n)
 			PrintNums(nums)
 		}
 	}
 
-	zeroPos := NumPos(nums, 0)
+	var zeroPlus1000, zeroPlus2000, zeroPlus3000 int
+	current := zeroNum
+	for i := 1; i <= 3000; i++ {
+		current = current.next
+		if i == 1000 {
+			zeroPlus1000 = current.n
+		} else if i == 2000 {
+			zeroPlus2000 = current.n
+		} else if i == 3000 {
+			zeroPlus3000 = current.n
+		}
+	}
 
-	return NumAtPos(nums, FixPos(zeroPos+1000-1, len(nums))).n +
-		NumAtPos(nums, FixPos(zeroPos+2000-1, len(nums))).n +
-		NumAtPos(nums, FixPos(zeroPos+3000-1, len(nums))).n
-}
-
-func NumAtPos(nums []*Num, pos int) *Num {
-	return linq.From(nums).WhereT(func(u *Num) bool { return u.pos == pos }).First().(*Num)
-}
-
-func NumPos(nums []*Num, n int) int {
-	return linq.From(nums).WhereT(func(u *Num) bool { return u.n == n }).First().(*Num).pos
+	return zeroPlus1000 + zeroPlus2000 + zeroPlus3000
 }
 
 func PrintNums(nums []*Num) {
-	for i := 0; i < len(nums); i++ {
-		fmt.Print(NumAtPos(nums, i).n, ",")
+	first := nums[0]
+	current := first
+	for {
+		fmt.Print(current.n, ",")
+		current = current.next
+
+		if current == first {
+			break
+		}
 	}
 	fmt.Println()
 }

@@ -13,12 +13,6 @@ func Test_Process_Sample(t *testing.T) {
 	assert.Equal(t, 3, result)
 }
 
-func Test_Mod(t *testing.T) {
-	assert.Equal(t, 8, FixPos(-2, 10))
-	assert.Equal(t, 2, FixPos(12, 10))
-	assert.Equal(t, 6, FixPos(6, 10))
-}
-
 func Test_Process_Input(t *testing.T) {
 	result := Process("input.txt", false)
 
